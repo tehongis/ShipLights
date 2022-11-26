@@ -17,15 +17,15 @@
         controls.rotateSpeed = 0.05;
         controls.dampingFactor = 0.1;
         controls.enableZoom = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = .75;
+//        controls.autoRotate = true;
+//        controls.autoRotateSpeed = .75;
 
         var scene = new THREE.Scene();
-        scene.add(new THREE.HemisphereLight(0x1f1f1f, 1.5));
-        //scene.add(new THREE.AmbientLight(0xfafafa, 0.25));
+        scene.add(new THREE.HemisphereLight(0x1f1f1f, 0.5));
+        scene.add(new THREE.AmbientLight(0x1a1a3a, 0.15));
 
         // Plane
-        const planeGeometry = new THREE.PlaneGeometry(20, 20);
+        const planeGeometry = new THREE.PlaneGeometry(20000, 20000);
         const materialPlane = new THREE.MeshPhongMaterial({ 
                                 color: 0x2f2f3f,
                                 specular: 20, 
@@ -35,7 +35,7 @@
         const plane = new THREE.Mesh( planeGeometry, materialPlane );
         plane.rotateX(-Math.PI / 2);
         plane.receiveShadow = true;
-        plane.position.set(0, -2.5, 0);
+        plane.position.set(0, -2.3, 0);
         scene.add(plane);
 
         // Boat model
@@ -50,8 +50,12 @@
         var middle = new THREE.Vector3();
         geometry.computeBoundingBox();
         geometry.boundingBox.getCenter(middle);
-        mesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation( -middle.x, -middle.y, -middle.z ) );
+        mesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation( -middle.x, -middle.y, -middle.z ) );       
 
+        var angle = Math.random() * 360;
+        document.getElementById("angle").innerHTML =  angle.toFixed();
+        mesh.rotateY(THREE.MathUtils.degToRad(angle));
+    
         // Sprites
         const map = new THREE.TextureLoader().load( 'sprite.png' );
         const materialWhiteSprite = new THREE.SpriteMaterial( { map: map, color: 0xffffff } );
@@ -72,25 +76,32 @@
         const spriteRear = new THREE.Sprite( materialWhiteSprite );
         spriteRear.position.set(0, -1.7, 2);
         spriteRear.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        mesh.add( spriteRear );
+        if (angle > 180 + 112.5/2 && angle < 180 - 112.5/2 ) {
+            mesh.add( spriteRear );
+        }
 
         const spritePortside = new THREE.Sprite( materialRedSprite );
         spritePortside.position.set(-1, -1.7, 0);
         spritePortside.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        mesh.add( spritePortside );
+        if (angle < 360 - 112.5) {
+            mesh.add( spritePortside );
+        }
+    
 
         const spriteStarboard = new THREE.Sprite( materialGreenSprite );
         spriteStarboard.position.set(1, -1.7, 0);
         spriteStarboard.scale.set(.4,.4,.4);  // imageWidth, imageHeight
+        if (angle > 112.5) {
         mesh.add( spriteStarboard );
+    }
 
 //        mesh.rotation.set(new THREE.Vector3( Math.PI / 12, 0, 0 ));
 
-/*
-        var light1 = new THREE.DirectionalLight(0xfa2a2a, 1.5);
-        light1.position.set(1, 1, 0);
-        scene.add(light1);
-*/
+
+        var light1 = new THREE.DirectionalLight(0x7f7f7f, 1.5);
+        light1.position.set(10, 10, 10);
+        //scene.add(light1);
+
 
         var largestDimension = Math.max(
                         geometry.boundingBox.max.x,
