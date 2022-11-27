@@ -2,12 +2,13 @@ let camera, scene, renderer;
 let cameraOrtho, sceneOrtho;
 let controls;
 var model = new THREE.Group();
+var line = new THREE.Line();
 
-var angle;
+var angle = Math.random() / 10;
 var oldtime;
 
 function drawShip() {
-    angle = Math.random() * 360;
+
 
     init();
     animate();
@@ -57,7 +58,7 @@ function init() {
             geometry.center()
             model.add(mesh);
         })
-        model.rotateY(THREE.MathUtils.degToRad(angle));
+        //model.rotateY(THREE.MathUtils.degToRad(angle));
 //        document.getElementById("angle").innerHTML =  angle;
         
         // Plane
@@ -148,8 +149,8 @@ function init() {
         points.push( new THREE.Vector3( -5, 20, 0 ) );
         points.push( new THREE.Vector3( 0, 75, 0 ) );
         const geometryLine = new THREE.BufferGeometry().setFromPoints( points );
-        const line = new THREE.Line( geometryLine, materialLine );
-        line.rotateZ(THREE.MathUtils.degToRad(angle));
+        line = new THREE.Line( geometryLine, materialLine );
+        //line.rotateZ(THREE.MathUtils.degToRad(angle));
         line.position.set( -220, 150, 0);
         sceneOrtho.add( line );
     
@@ -172,21 +173,12 @@ function onWindowResize() {
 function render() {
     const time = Date.now() / 1000;
     var timediff = time - oldtime;
-/*    
-    angle = angle + timediff * 0.5;
-    if (angle > 360) {
-        angle = angle - 360;
-    }
-    if (angle < 0) {
-        angle = angle + 360;
-    }
-*/
-//    controls.update();
-    document.getElementById("angle").innerHTML =  timediff.toPrecision(2) + " : " + angle;
-    model.rotateY(THREE.MathUtils.degToRad(0.1));
-
-
     
+//    controls.update();
+    var boatAngle = THREE.MathUtils.radToDeg(model.rotation.y);
+    document.getElementById("angle").innerHTML =  boatAngle.toPrecision(4);
+    model.rotateY(THREE.MathUtils.degToRad(angle));
+    line.rotateZ(THREE.MathUtils.degToRad(angle));  
 
     renderer.clear();
     renderer.render( scene, camera );
