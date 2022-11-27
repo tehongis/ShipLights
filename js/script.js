@@ -1,28 +1,46 @@
-    function STLViewer(model, elementID) {
-        var elem = document.getElementById(elementID)
-        var camera = new THREE.PerspectiveCamera(45, elem.clientWidth/elem.clientHeight, 1, 1000);
-        var renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(elem.clientWidth, elem.clientHeight);
-        elem.appendChild(renderer.domElement);
+let camera, scene, renderer;
+let cameraOrtho, sceneOrtho;
+let model;
+let controls;
+let angle;
+let group;
 
-        window.addEventListener('resize', function () {
-            renderer.setSize(elem.clientWidth, elem.clientHeight);
-            camera.aspect = elem.clientWidth/elem.clientHeight;
-            camera.updateProjectionMatrix();
-        }, false);
+function drawship() {
+    init();
+    animate();
+}
 
-        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+function init() {        
 
-        controls.enableDamping = true;
-        controls.rotateSpeed = 0.05;
-        controls.dampingFactor = 0.1;
-        controls.enableZoom = true;
-//        controls.autoRotate = true;
-//        controls.autoRotateSpeed = .75;
+        //var angle = Math.random() * 360;
+        document.getElementById("angle").innerHTML =  angle;
 
-        var scene = new THREE.Scene();
-        scene.add(new THREE.HemisphereLight(0x1f1f1f, 0.5));
-        scene.add(new THREE.AmbientLight(0x1a1a3a, 0.15));
+        // Sprites
+        const lightSprite = new THREE.TextureLoader().load( 'sprite.png' );
+        const materialWhiteSprite = new THREE.SpriteMaterial( { map:lightSprite, color: 0xffffff } );
+        const materialRedSprite = new THREE.SpriteMaterial( { map: lightSprite, color: 0xff0000 } );
+        const materialGreenSprite = new THREE.SpriteMaterial( { map: lightSprite, color: 0x00ff00 } );
+        const materialYellowSprite = new THREE.SpriteMaterial( { map: lightSprite, color: 0xffff00 } );
+
+        const materialBoat = new THREE.MeshPhongMaterial({ 
+            color: 0xf0f0ff,
+            specular: 100, 
+            shininess: 10,
+            reflectivity: 0.2 });
+
+        // Boat model
+        const loader = new THREE.STLLoader()
+        loader.load("sailboat.stl", function (geometry) {            
+            var middle = new THREE.Vector3();
+            geometry.computeBoundingBox();
+            geometry.boundingBox.getCenter(middle);   
+            model = new THREE.Mesh(geometry, materialBoat)
+            model.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation( -middle.x, -middle.y, -middle.z ) );
+            model.castShadow = true
+            model.receiveShadow = true  
+            geometry.center()
+        })
+
 
         // Plane
         const planeGeometry = new THREE.PlaneGeometry(20000, 20000);
@@ -36,86 +54,124 @@
         plane.rotateX(-Math.PI / 2);
         plane.receiveShadow = true;
         plane.position.set(0, -2.3, 0);
+
+        var elem = document.getElementById("view");
+
+        cameraOrtho = new THREE.OrthographicCamera( - elem.clientWidth / 2, elem.clientWidth / 2, elem.clientHeight / 2, - elem.clientHeight / 2, 1, 10 );
+        cameraOrtho.position.set( 0, 0, 2 );
+        sceneOrtho = new THREE.Scene();
+
+        camera = new THREE.PerspectiveCamera(45, elem.clientWidth/elem.clientHeight, 1, 2000);
+        camera.position.set( 0, -1.5, 12 );
+        scene = new THREE.Scene();
+        scene.add(new THREE.HemisphereLight(0x4f4f4f, 0.5));
+        //scene.add(new THREE.AmbientLight(0x1a1a3a, 0.15));
+        scene.fog = new THREE.Fog( 0x000000, 1, 50 );
+
         scene.add(plane);
+        scene.add(model);
+//        model.rotateY(THREE.MathUtils.degToRad(angle));
 
-        // Boat model
-        (new THREE.STLLoader()).load(model, function (geometry) {
-            var material = new THREE.MeshPhongMaterial({ 
-            color: 0xf0f0f0, 
-            specular: 100, 
-            shininess: 50 });
-        var mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
+        // renderer
+        renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
+        renderer.setSize(elem.clientWidth, elem.clientHeight);
+        renderer.autoClear = false; // To allow render overlay on top of sprited sphere
+        elem.appendChild(renderer.domElement);
+        //document.body.appendChild( renderer.domElement );
 
-        var middle = new THREE.Vector3();
-        geometry.computeBoundingBox();
-        geometry.boundingBox.getCenter(middle);
-        mesh.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation( -middle.x, -middle.y, -middle.z ) );       
+        
+        /*
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.rotateSpeed = 0.05;
+        controls.dampingFactor = 0.1;
+        controls.enableZoom = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = .75;
+        */
 
-        var angle = Math.random() * 360;
-        document.getElementById("angle").innerHTML =  angle.toFixed();
-        mesh.rotateY(THREE.MathUtils.degToRad(angle));
-    
-        // Sprites
-        const map = new THREE.TextureLoader().load( 'sprite.png' );
-        const materialWhiteSprite = new THREE.SpriteMaterial( { map: map, color: 0xffffff } );
-        const materialRedSprite = new THREE.SpriteMaterial( { map: map, color: 0xff0000 } );
-        const materialGreenSprite = new THREE.SpriteMaterial( { map: map, color: 0x00ff00 } );
-        const materialYellowSprite = new THREE.SpriteMaterial( { map: map, color: 0xffff00 } );
+        //const spriteMastRed = new THREE.Sprite( materialRedSprite );
+        //spriteMastRed.position.set(0, 2.7, 0);
+        //spriteMastRed.scale.set(.4,.4,.4);  // imageWidth, imageHeight
+        //mesh.add( spriteMastRed );
 
-        const spriteMastRed = new THREE.Sprite( materialRedSprite );
-        spriteMastRed.position.set(0, 2.7, 0);
-        spriteMastRed.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        mesh.add( spriteMastRed );
+/*
+        group = new THREE.Group();
+        group.add( sprite );
+        scene.add( group );
+*/
 
         const spriteMastWhite = new THREE.Sprite( materialWhiteSprite );
-        spriteMastWhite.position.set(0, 2.4, 0);
+        spriteMastWhite.position.set(0, 2.7, 0);
         spriteMastWhite.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        mesh.add( spriteMastWhite );
+        if (angle >= 65.5 && angle <= 252.5 ) {
+            model.add( spriteMastWhite );
+        }
 
         const spriteRear = new THREE.Sprite( materialWhiteSprite );
         spriteRear.position.set(0, -1.7, 2);
         spriteRear.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        if (angle > 180 + 112.5/2 && angle < 180 - 112.5/2 ) {
-            mesh.add( spriteRear );
+        if (angle >= 252.5 || angle <= 67.5 ) {
+            model.add( spriteRear );
         }
 
         const spritePortside = new THREE.Sprite( materialRedSprite );
         spritePortside.position.set(-1, -1.7, 0);
         spritePortside.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        if (angle < 360 - 112.5) {
-            mesh.add( spritePortside );
+        if (angle >= 65.5 && angle <= 180.0 ) {
+            model.add( spritePortside );
         }
     
 
         const spriteStarboard = new THREE.Sprite( materialGreenSprite );
         spriteStarboard.position.set(1, -1.7, 0);
         spriteStarboard.scale.set(.4,.4,.4);  // imageWidth, imageHeight
-        if (angle > 112.5) {
-        mesh.add( spriteStarboard );
-    }
+        if (angle >= 180 && angle <= 242.5 ) {
+            model.add( spriteStarboard );
+        }
 
-//        mesh.rotation.set(new THREE.Vector3( Math.PI / 12, 0, 0 ));
+        // compass
+        const geometryCircle = new THREE.CircleGeometry( 80, 32 );
+        const materialCircle = new THREE.MeshBasicMaterial( { color: 0x3f3f3f } );
+        const circle = new THREE.Mesh( geometryCircle, materialCircle );
+        circle.position.set(-220, 150, 0);
+        sceneOrtho.add( circle );
+
+        const materialLine = new THREE.LineBasicMaterial( { color: 0xffffff } );     
+        const points = [];
+        points.push( new THREE.Vector3( 0, 0, 0 ) );
+        points.push( new THREE.Vector3( 0, 75, 0 ) );
+        const geometryLine = new THREE.BufferGeometry().setFromPoints( points );
+        const line = new THREE.Line( geometryLine, materialLine );
+        line.rotateZ(THREE.MathUtils.degToRad(angle));
+        line.position.set(-220, 150, 0);
+        sceneOrtho.add( line );
+    
+}
+
+function animate() {
+
+    requestAnimationFrame( animate );
+    render();
+
+}
+
+function onWindowResize() {
+    
+    renderer.setSize(elem.clientWidth, elem.clientHeight);
+
+}
 
 
-        var light1 = new THREE.DirectionalLight(0x7f7f7f, 1.5);
-        light1.position.set(10, 10, 10);
-        //scene.add(light1);
+function render() {
 
+    const time = Date.now() / 1000;
+    angle = time * 0.5;
+    angle = angle % 360;
+    //controls.update();
+    renderer.clear();
+    renderer.render( scene, camera );
+    renderer.clearDepth();
+    renderer.render( sceneOrtho, cameraOrtho );
 
-        var largestDimension = Math.max(
-                        geometry.boundingBox.max.x,
-                        geometry.boundingBox.max.y, 
-                        geometry.boundingBox.max.z
-                        )
-        camera.position.z = largestDimension * 5.5;
-
-        var animate = function () {
-            requestAnimationFrame(animate);
-            controls.update();
-            renderer.render(scene, camera);
-        }; 
-
-        animate();
-        });
-    }
+}
